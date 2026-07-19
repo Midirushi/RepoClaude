@@ -1,0 +1,24 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+runs/
+dist/
+build/
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.vscode/
+uv.lock
+.idea/
+.DS_Store
+*.log
+workspace/
+.repo-core.pid
+
+# 运行时数据（含对话记录、LLM trace、日志，不应提交）
+sessions/
+traces/
+logs/
