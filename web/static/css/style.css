@@ -363,6 +363,7 @@ code, pre { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
 .message {
   margin-bottom: 16px;
   display: flex;
+  flex-direction: column;
   max-width: var(--content-max);
   margin-left: auto;
   margin-right: auto;
@@ -373,9 +374,10 @@ code, pre { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
   to { opacity: 1; transform: translateY(0); }
 }
 
-.message.user { justify-content: flex-end; }
-.message.assistant { justify-content: flex-start; }
-.message.system { justify-content: center; }
+.message.user .message-content { align-self: flex-end; }
+.message.assistant .message-content { align-self: flex-start; }
+.message.system .message-content { align-self: center; }
+.message.error .message-content { align-self: stretch; }
 
 .message-content {
   max-width: 78%;
@@ -507,8 +509,19 @@ code, pre { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
   color: var(--text-tertiary);
   margin-top: 4px;
   text-align: right;
+  max-width: 78%;
+  align-self: flex-end;
+  padding: 0 4px;
+  user-select: none;
 }
-.message.assistant .ts { text-align: left; }
+.message.assistant .ts {
+  text-align: left;
+  align-self: flex-start;
+}
+.message.system .ts {
+  align-self: center;
+  text-align: center;
+}
 
 /* 流式输出光标 */
 .streaming-cursor::after {

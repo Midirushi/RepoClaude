@@ -129,9 +129,14 @@ export class Chat {
     const content = document.createElement("div");
     content.className = "message-content streaming-cursor";
     wrap.appendChild(content);
+    const ts = document.createElement("div");
+    ts.className = "ts";
+    ts.textContent = this._formatTime(new Date());
+    wrap.appendChild(ts);
     this.messagesEl.appendChild(wrap);
     this.currentAssistantEl = wrap;
     this.currentAssistantTextEl = content;
+    this._assistantStartTs = ts;
     this._scrollToBottom();
   }
 
@@ -147,8 +152,12 @@ export class Chat {
       const text = this.currentAssistantTextEl.textContent;
       this.currentAssistantTextEl.innerHTML = markdownToHtml(text);
     }
+    if (this._assistantStartTs) {
+      this._assistantStartTs.textContent = this._formatTime(new Date());
+    }
     this.currentAssistantEl = null;
     this.currentAssistantTextEl = null;
+    this._assistantStartTs = null;
   }
 
   // ---- 工具调用 ----
@@ -317,6 +326,10 @@ export class Chat {
     content.className = "message-content";
     content.textContent = text;
     wrap.appendChild(content);
+    const ts = document.createElement("div");
+    ts.className = "ts";
+    ts.textContent = this._formatTime(new Date());
+    wrap.appendChild(ts);
     this.messagesEl.appendChild(wrap);
     this._scrollToBottom();
   }
@@ -328,6 +341,10 @@ export class Chat {
     content.className = "message-content";
     content.innerHTML = markdownToHtml(text);
     wrap.appendChild(content);
+    const ts = document.createElement("div");
+    ts.className = "ts";
+    ts.textContent = this._formatTime(new Date());
+    wrap.appendChild(ts);
     this.messagesEl.appendChild(wrap);
     this._scrollToBottom();
   }
@@ -339,6 +356,10 @@ export class Chat {
     content.className = "message-content";
     content.textContent = text;
     wrap.appendChild(content);
+    const ts = document.createElement("div");
+    ts.className = "ts";
+    ts.textContent = this._formatTime(new Date());
+    wrap.appendChild(ts);
     this.messagesEl.appendChild(wrap);
     this._scrollToBottom();
   }
@@ -350,6 +371,10 @@ export class Chat {
     content.className = "message-content";
     content.textContent = text;
     wrap.appendChild(content);
+    const ts = document.createElement("div");
+    ts.className = "ts";
+    ts.textContent = this._formatTime(new Date());
+    wrap.appendChild(ts);
     this.messagesEl.appendChild(wrap);
     this._scrollToBottom();
   }
@@ -401,5 +426,11 @@ export class Chat {
 
   _scrollToBottom() {
     this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
+  }
+
+  _formatTime(date) {
+    const h = String(date.getHours()).padStart(2, "0");
+    const m = String(date.getMinutes()).padStart(2, "0");
+    return `${h}:${m}`;
   }
 }
