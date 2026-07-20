@@ -35,6 +35,8 @@ from repo_claude.core.bus.commands import (
     SessionListResult,
     SessionSendMessageCommand,
     SessionSendMessageResult,
+    SkillListCommand,
+    SkillListResult,
 )
 from repo_claude.core.bus.envelope import EventPushEnvelope
 from repo_claude.core.config import RepoConfig, get_config
@@ -163,6 +165,21 @@ class CoreApp:
         sessions = await self._sessions.list()
         return SessionListResult(sessions=sessions)
 
+    # 列出所有可用 skill
+    async def _skill_list_handler(self, _params: dict[str, Any]) -> SkillListResult:
+        from repo_claude.core.skills.loader import SkillLoader
+        loader = SkillLoader()
+        skills = loader.list_all_skills()
+        return SkillListResult(
+            skills=[
+                {
+                    "name": s.name,
+                    "description": s.description,
+                }
+                for s in skills
+            ]
+        )
+
     # 注册客户端事件订阅，可选先回放 events.jsonl 历史再接收实时流
     async def _subscribe_handler(self, params: dict[str, Any]) -> EventSubscribeResult:
         cmd = EventSubscribeCommand.model_validate(params)
@@ -279,6 +296,7 @@ class CoreApp:
         server.register("session.close", self._session_close_handler)
         server.register("permission.respond", self._permission_respond_handler)
         server.register("session.compact", self._session_compact_handler)
+        server.register("skill.list", self._skill_list_handler)
 
         addr = await server.start()
         logger.info("repo-core %s listening addr=%s", repo_claude.__version__, addr)

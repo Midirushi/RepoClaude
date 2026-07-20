@@ -109,6 +109,14 @@ class SessionCompactResult(BaseModel):
     saved_tokens: int
 
 
+class SkillListCommand(BaseModel):
+    type: Literal["skill.list"] = "skill.list"
+
+
+class SkillListResult(BaseModel):
+    skills: list[dict[str, Any]]
+
+
 # 根据 type 字段决定命令类型的判别联合
 Command = Annotated[
     PingCommand
@@ -120,6 +128,7 @@ Command = Annotated[
     | SessionListCommand
     | SessionCloseCommand
     | PermissionRespondCommand
-    | SessionCompactCommand,
+    | SessionCompactCommand
+    | SkillListCommand,
     Discriminator("type"),
 ]

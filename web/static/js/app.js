@@ -6,6 +6,7 @@ import { Theme } from "./theme.js";
 import { Session } from "./session.js";
 import { Chat } from "./chat.js";
 import { Permission } from "./permission.js";
+import { SkillCompleter } from "./skill.js";
 
 const rpc = new RepoRpc();
 const theme = new Theme();
@@ -66,12 +67,17 @@ rpc.onEvent((event) => {
 // ---- DOM 事件绑定 ----
 const inputEl = document.getElementById("input");
 const sendBtn = document.getElementById("send");
+const skillCompleter = new SkillCompleter(rpc, inputEl);
 
-sendBtn.onclick = () => chat.send();
+sendBtn.onclick = () => {
+  skillCompleter.hide();
+  chat.send();
+};
 
 inputEl.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && !e.shiftKey) {
+  if (e.key === "Enter" && !e.shiftKey && !skillCompleter._popup) {
     e.preventDefault();
+    skillCompleter.hide();
     chat.send();
   }
 });
@@ -149,7 +155,10 @@ async function bootstrap() {
     toast(`事件订阅失败: ${e.message}`, "error");
   }
 
-  // 3. 恢复上次 active session（如果 daemon 还在）
+  // 3. 加载技能列表（用于斜杠命令补全）
+  skillCompleter.loadSkills();
+
+  // 4. 恢复上次 active session（如果 daemon 还在）
   const restored = await session.loadActive();
   if (!restored) {
     // 没有 active 或服务端已不记得，提示用户新建
@@ -158,11 +167,11 @@ async function bootstrap() {
     document.getElementById("welcome").style.display = "none";
   }
 
-  // 4. 焦点
+  // 5. 焦点
   inputEl.focus();
 }
 
 bootstrap();
 
 // 暴露给 console 方便调试
-window.repo = { rpc, session, chat, permission, theme, toast };
+window.repo = { rpc, session, chat, permission, theme, toast, skillCompleter };

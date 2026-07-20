@@ -655,6 +655,49 @@ code, pre { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
   line-height: var(--hintbar-h);
 }
 
+/* ---------- 斜杠命令弹出层 ---------- */
+.skill-popup {
+  max-width: var(--content-max);
+  width: calc(100% - 32px);
+  margin: 0 auto;
+  max-height: 280px;
+  overflow-y: auto;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  z-index: 100;
+}
+
+.skill-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.skill-item:hover,
+.skill-item.selected {
+  background: var(--accent-bg);
+}
+
+.skill-name {
+  font-weight: 600;
+  color: var(--accent);
+  font-size: 13px;
+  white-space: nowrap;
+  font-family: var(--font-mono, "SF Mono", Menlo, monospace);
+}
+
+.skill-desc {
+  color: var(--text-secondary);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ---------- 权限审批弹窗 ---------- */
 .modal {
   position: fixed;
