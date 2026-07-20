@@ -10,6 +10,45 @@ uv run repo-core
 
 默认监听 `127.0.0.1:7437`，按 `Ctrl+C` 优雅退出。
 
+### 启动 Web 客户端
+
+```bash
+# 终端 1：启动 daemon（必须先启动）
+uv run repo-core
+
+# 终端 2：启动 Web Bridge（WebSocket ↔ daemon TCP）
+uv run repo web
+# 或直接启动：python -m web.bridge.server
+
+# 终端 3：启动前端静态文件服务
+uv run python -m http.server 8438 --directory web/static
+```
+
+浏览器打开 http://127.0.0.1:8438。
+
+**端口约定：**
+
+| 端口 | 用途 |
+|------|------|
+| 7437 | RepoClaude daemon（TCP + NDJSON） |
+| 8437 | Web Bridge（WebSocket） |
+| 8438 | 前端静态文件（本地 HTTP 服务） |
+
+**环境变量：**
+
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `REPO_BRIDGE_DAEMON_HOST` | `127.0.0.1` | daemon 主机 |
+| `REPO_BRIDGE_WEB_HOST` | `127.0.0.1` | bridge 监听主机 |
+| `REPO_BRIDGE_WEB_PORT` | `8437` | bridge 监听端口 |
+| `REPO_BRIDGE_LOG_LEVEL` | `INFO` | bridge 日志级别 |
+
+**停止 Web Bridge：**
+
+```bash
+kill $(pgrep -f "web.bridge.server")
+```
+
 ### 验证连通
 
 ```bash
@@ -93,3 +132,5 @@ tail -f ~/.repo/logs/core.log
 | `core not running` | 未启动守护进程 | `uv run repo-core` |
 | `Address already in use` | 端口被其他进程占用 | `REPO_PORT=8000 uv run repo-core` |
 | `Config error: REPO_PORT must be an integer` | `.env` 或环境变量中端口值非整数 | 检查 `REPO_PORT` 的值 |
+| `daemon not running at 127.0.0.1:7437` | Web Bridge 无法连接 daemon | 确认 daemon 已启动，端口一致 |
+| WebSocket 连接失败 | 浏览器用 `file://` 协议打开 HTML | 必须用 HTTP 服务（`python -m http.server`） |

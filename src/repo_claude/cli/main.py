@@ -9,6 +9,7 @@ from repo_claude.cli.commands.ping import cmd_ping
 from repo_claude.cli.commands.run import cmd_run
 from repo_claude.cli.commands.trace import cmd_trace
 from repo_claude.cli.commands.version import cmd_version
+from repo_claude.cli.commands.web import cmd_web_start
 from repo_claude.core.config import get_config
 from repo_claude.core.logging_setup import setup_logging
 
@@ -37,6 +38,9 @@ def main() -> None:
     trace_parser.add_argument("--direction", help="Filter by direction (e.g. CORE→LLM)")
     trace_parser.add_argument("--raw", action="store_true", help="Output raw NDJSON")
     trace_parser.add_argument("--follow", "-f", action="store_true", help="Follow new records")
+
+    web_parser = subparsers.add_parser("web", help="Start the web bridge (WebSocket ↔ daemon)")
+    web_parser.add_argument("--port", type=int, default=None, help="Web bridge port (default 8437)")
 
     args = parser.parse_args()
 
@@ -72,6 +76,8 @@ def main() -> None:
             raw=args.raw,
             follow=args.follow,
         )
+    elif args.command == "web":
+        cmd_web_start(port=args.port)
     else:
         parser.print_help()
         sys.exit(1)

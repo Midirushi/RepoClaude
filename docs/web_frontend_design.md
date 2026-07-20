@@ -1264,33 +1264,47 @@ repo-web = "bridge.server:main"
 
 ## 十三、实现计划
 
-### 阶段一：MVP（最小可用）
+### 阶段一：MVP（最小可用）✅ 已完成
 
-| 任务 | 预计产出 |
-|------|---------|
-| Web Bridge 80 行实现 | 浏览器能连上 daemon |
-| 基础 HTML + CSS | 静态页面能跑 |
-| RPC 客户端 | 能在 console 里手动调用 daemon |
-| 会话列表 + 对话区 | 看到历史消息 |
-| 输入框 + 发送 | 能发消息看到流式响应 |
-| 权限审批弹窗 | 能审批 bash 工具调用 |
+| 任务 | 状态 | 实际产出 |
+|------|------|---------|
+| Web Bridge 80 行实现 | ✅ | 114 行，基于 `websockets` 库 |
+| 基础 HTML + CSS | ✅ | 93 行 HTML，711 行 CSS（双主题 + 响应式） |
+| RPC 客户端 | ✅ | 171 行 `rpc.js`（自动重连、状态订阅） |
+| 会话列表 + 对话区 | ✅ | 220 行 `session.js`（localStorage 记忆） |
+| 输入框 + 发送 | ✅ | `chat.js` 中实现（流式 token + 工具块） |
+| 权限审批弹窗 | ✅ | 93 行 `permission.js`（4 种决策 + Esc/Enter 快捷键） |
+
+**阶段一额外实现（超出设计）：**
+- 子 Agent 块展示（`subagent.started/finished`）
+- 上下文压缩提示（`context.compacted`）
+- Toast 状态提示
+- 响应式布局（< 768px 侧栏抽屉式）
+- `repo web` CLI 子命令注册
+- 4 个 Bridge 单元测试
+
+**与设计文档的差异：**
+1. 事件名按真实协议修正：`tool.started/finished` → `tool.call_started/finished/failed`，`llm.message_done` → `session.waiting_for_input`
+2. 决策值按真实协议修正：`deny_always/allow_always` → `always_deny/always_allow`
+3. `session.list` RPC 暂未实现（daemon 未暴露），前端改用 `session.created` 事件 + localStorage 追踪会话
+4. 静态文件服务暂用 `python -m http.server`（阶段二合并到 Bridge）
 
 ### 阶段二：体验优化
 
-- 主题切换
 - Markdown 渲染（用 marked.js，~30KB）
 - 代码高亮（用 highlight.js，~50KB）
-- 工具调用可视化折叠面板
-- 会话重命名 / 关闭
-- 输入框自动撑高
-- 流式渲染光标闪烁
+- 工具调用可视化折叠面板（已部分实现）
+- 会话重命名 / 关闭（已实现）
+- 输入框自动撑高（已实现）
+- 流式渲染光标闪烁（已实现）
+- Bridge 同时托管静态文件（省去单独 HTTP 服务）
 
 ### 阶段三：高级功能
 
 - 多客户端实时同步（已天然支持，靠 event.subscribe）
 - 子 Agent 可视化（嵌套进度条）
 - Trace 实时查看
-- 移动端适配
+- 移动端深度适配
 - 键盘快捷键面板（⌘K 调出）
 - 文件拖拽上传
 - 多语言切换（中/英）

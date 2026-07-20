@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RepoClaude</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- 顶栏 -->
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo">◇</span>
+        <span class="name">RepoClaude</span>
+      </div>
+      <div class="status" id="status">
+        <span class="dot" id="status-dot"></span>
+        <span class="label" id="status-label">未连接</span>
+        <span class="version" id="status-version"></span>
+      </div>
+      <div class="actions">
+        <button id="theme-toggle" class="icon-btn" title="切换主题" aria-label="切换主题">☀</button>
+        <button id="new-session-top" class="primary-btn" title="新建会话" aria-label="新建会话">⏻ 新会话</button>
+      </div>
+    </header>
+
+    <!-- 主体 -->
+    <div class="main">
+      <!-- 侧边栏：会话列表 -->
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+          <span>会话</span>
+          <span class="count" id="session-count">0</span>
+        </div>
+        <div class="session-list" id="session-list">
+          <div class="session-empty" id="session-empty">暂无会话，点击下方创建</div>
+        </div>
+        <button class="new-session-btn" id="new-session-btn">+ 新建会话</button>
+      </aside>
+
+      <!-- 抽屉切换（窄屏） -->
+      <button class="sidebar-toggle" id="sidebar-toggle" title="展开/收起侧栏">☰</button>
+
+      <!-- 对话区 -->
+      <main class="chat">
+        <div class="messages" id="messages">
+          <div class="welcome" id="welcome">
+            <h1>◇ RepoClaude</h1>
+            <p>本地代码智能体 · 浏览器即客户端</p>
+            <p class="hint">先确保 daemon 已运行（<code>uv run repo-core</code>），再输入消息开始</p>
+          </div>
+        </div>
+        <div class="input-area">
+          <textarea
+            id="input"
+            placeholder="输入消息...（Enter 发送，Shift+Enter 换行）"
+            rows="1"
+            aria-label="消息输入框"
+          ></textarea>
+          <button id="send" class="primary-btn" aria-label="发送">发送 →</button>
+        </div>
+        <div class="hint-bar">Enter 发送 · Shift+Enter 换行 · / 唤起技能</div>
+      </main>
+    </div>
+
+    <!-- 权限审批弹窗 -->
+    <div class="modal" id="permission-modal" hidden role="dialog" aria-modal="true" aria-labelledby="permission-title">
+      <div class="modal-content">
+        <h3 id="permission-title">⚠ 权限审批</h3>
+        <p class="modal-meta">
+          工具：<strong id="permission-tool"></strong>
+          <span class="modal-meta-sep">·</span>
+          会话：<code id="permission-session"></code>
+        </p>
+        <div class="modal-params-label">参数预览</div>
+        <div class="modal-params" id="permission-params"></div>
+        <div class="modal-actions">
+          <button class="danger" data-decision="deny_once">拒绝</button>
+          <button data-decision="allow_once">允许一次</button>
+          <button class="danger" data-decision="always_deny">始终拒绝</button>
+          <button class="primary" data-decision="always_allow">始终允许</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 状态提示（连接错误、运行结束等） -->
+    <div class="toast" id="toast" hidden></div>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

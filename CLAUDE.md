@@ -14,6 +14,7 @@ uv run mypy src
 
 # Tests
 uv run pytest tests/unit -v           # unit only (fast, no daemon)
+uv run pytest tests/web/ -v           # web bridge tests
 uv run pytest tests/integration -v    # needs no running daemon; fixture spawns one
 uv run pytest tests/ -v               # all
 
@@ -33,6 +34,10 @@ REPO_PORT=8000 uv run repo-core        # override port
 # Send a ping
 uv run repo ping
 uv run repo --version
+
+# Start Web Bridge
+uv run repo web                        # starts WebSocket server on 8437
+uv run python -m web.bridge.server     # direct invocation
 ```
 
 ## Architecture
