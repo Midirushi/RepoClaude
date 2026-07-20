@@ -93,6 +93,35 @@ if (sidebarToggle) {
   sidebarToggle.onclick = () => sidebar.classList.toggle("open");
 }
 
+// ---- 事件订阅 ----
+async function subscribeEvents() {
+  await rpc.call("event.subscribe", {
+    topics: [
+      "session.*",
+      "run.*",
+      "step.*",
+      "tool.*",
+      "llm.*",
+      "permission.*",
+      "subagent.*",
+      "skill.*",
+      "context.*",
+      "log.*",
+    ],
+    scope: "global",
+  });
+}
+
+// ---- 重连后恢复订阅 ----
+rpc.onReconnect(async () => {
+  try {
+    await subscribeEvents();
+    console.log("event subscription restored after reconnect");
+  } catch (e) {
+    console.error("failed to restore event subscription:", e);
+  }
+});
+
 // ---- 主流程 ----
 async function bootstrap() {
   session.init();
@@ -115,21 +144,7 @@ async function bootstrap() {
 
   try {
     // 2. 全局事件订阅
-    await rpc.call("event.subscribe", {
-      topics: [
-        "session.*",
-        "run.*",
-        "step.*",
-        "tool.*",
-        "llm.*",
-        "permission.*",
-        "subagent.*",
-        "skill.*",
-        "context.*",
-        "log.*",
-      ],
-      scope: "global",
-    });
+    await subscribeEvents();
   } catch (e) {
     toast(`事件订阅失败: ${e.message}`, "error");
   }

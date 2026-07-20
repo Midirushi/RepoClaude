@@ -30,6 +30,7 @@ export class RepoRpc {
     this.state = "idle";              // idle | connecting | connected | error | closed
     this.shouldReconnect = false;
     this._reconnectTimer = null;
+    this._reconnectHandlers = new Set();
   }
 
   // ---- 状态订阅 ----
@@ -37,6 +38,12 @@ export class RepoRpc {
     this.stateHandlers.add(handler);
     handler(this.state);
     return () => this.stateHandlers.delete(handler);
+  }
+
+  // ---- 重连回调（页面初始化代码注册，用于重连后重新订阅事件） ----
+  onReconnect(handler) {
+    this._reconnectHandlers.add(handler);
+    return () => this._reconnectHandlers.delete(handler);
   }
 
   _setState(state) {
@@ -69,7 +76,13 @@ export class RepoRpc {
       }
       this.ws = ws;
       ws.onopen = () => {
+        const wasReconnect = this.state === "closed";
         this._setState("connected");
+        if (wasReconnect) {
+          this._reconnectHandlers.forEach((h) => {
+            try { h(); } catch (e) { console.error("reconnect handler error:", e); }
+          });
+        }
         resolve();
       };
       ws.onerror = () => {
