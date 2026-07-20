@@ -515,6 +515,18 @@ code, pre { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
   border-radius: var(--radius);
 }
 
+.meta-line {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  text-align: center;
+  padding: 2px 0;
+  line-height: 1.4;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  user-select: none;
+  font-variant-numeric: tabular-nums;
+}
+
 .message.error .message-content {
   background: var(--error-bg);
   color: var(--error);

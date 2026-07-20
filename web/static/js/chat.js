@@ -80,7 +80,7 @@ export class Chat {
     } else if (t === "run.finished") {
       this._handleRunFinished(event);
     } else if (t === "step.started") {
-      this._appendSystem(`步骤 ${event.step} 开始`);
+      this._appendMeta(`步骤 ${event.step}`);
     } else if (t === "step.finished") {
       // 可选：步骤结束
     } else if (t === "subagent.started") {
@@ -103,9 +103,7 @@ export class Chat {
     } else if (t === "log.line") {
       // 阶段一不展示日志
     } else if (t === "context.compacted") {
-      this._appendSystem(
-        `上下文已压缩: ${event.original_tokens} → ${event.summary_tokens} tokens`,
-      );
+      this._appendMeta(`上下文压缩: ${event.original_tokens} → ${event.summary_tokens} tokens`);
     } else if (t === "permission.granted") {
       this._appendSystem(`已授权 (${event.decision})`);
     } else if (t === "permission.denied") {
@@ -364,6 +362,14 @@ export class Chat {
     this._scrollToBottom();
   }
 
+  _appendMeta(text) {
+    const el = document.createElement("div");
+    el.className = "meta-line";
+    el.textContent = text;
+    this.messagesEl.appendChild(el);
+    this._scrollToBottom();
+  }
+
   _appendError(text) {
     const wrap = document.createElement("div");
     wrap.className = "message error";
@@ -382,11 +388,11 @@ export class Chat {
   _appendUsage(event) {
     const total = (event.input_tokens || 0) + (event.output_tokens || 0);
     const context = event.context_pct != null ? ` · ${(event.context_pct * 100).toFixed(1)}%` : "";
-    this._appendSystem(`Token: ${total.toLocaleString()} (输入 ${(event.input_tokens || 0).toLocaleString()} / 输出 ${(event.output_tokens || 0).toLocaleString()}${context})`);
+    this._appendMeta(`Token ${total.toLocaleString()} (↑${(event.input_tokens || 0).toLocaleString()} ↓${(event.output_tokens || 0).toLocaleString()}${context})`);
   }
 
   _appendModelSelected(event) {
-    this._appendSystem(`模型: ${event.model} (策略: ${event.strategy})`);
+    this._appendMeta(`模型: ${event.model} (${event.strategy})`);
   }
 
   _toast(text, kind) {
