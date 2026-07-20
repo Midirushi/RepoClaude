@@ -447,6 +447,45 @@ code, pre { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
 [data-theme="light"] .hl-function { color: #00bcd4; }
 [data-theme="light"] .hl-type { color: #ff9800; }
 
+/* Markdown Table */
+.message-content .md-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.5em 0;
+  font-size: 0.9em;
+}
+
+.message-content .md-table th,
+.message-content .md-table td {
+  border: 1px solid var(--border-color);
+  padding: 6px 12px;
+  text-align: left;
+}
+
+.message-content .md-table th {
+  background-color: var(--primary-color);
+  color: white;
+  font-weight: 600;
+}
+
+.message-content .md-table tbody tr:nth-child(even) {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .message-content .md-table tbody tr:nth-child(even) {
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+.message-content .md-table th[align="center"],
+.message-content .md-table td[align="center"] {
+  text-align: center;
+}
+
+.message-content .md-table th[align="right"],
+.message-content .md-table td[align="right"] {
+  text-align: right;
+}
+
 .message.system .message-content {
   background: var(--system-bubble);
   color: var(--text-primary);
