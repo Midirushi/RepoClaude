@@ -12,11 +12,13 @@ import asyncio
 import sys
 from pathlib import Path
 
-# 把 web/bridge 加入模块搜索路径，避免在主项目 pyproject 中显式声明依赖
+# 把项目根目录加入模块搜索路径，这样 `import web.bridge` 能找到 web/bridge/__init__.py
 _THIS_FILE = Path(__file__).resolve()
-_WEB_BRIDGE_DIR = _THIS_FILE.parents[3] / "web" / "bridge"
-if str(_WEB_BRIDGE_DIR.parent) not in sys.path:
-    sys.path.insert(0, str(_WEB_BRIDGE_DIR.parent))
+# web/ 在项目根目录下（同级别 src/），所以往上走 4 级到项目根：
+# web.py → commands → cli → repo_claude → src → RepoClaude (root)
+_PROJECT_ROOT = _THIS_FILE.parents[4]
+if str(_PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_ROOT))
 
 
 def cmd_web_start(port: int | None = None) -> None:
@@ -28,8 +30,7 @@ def cmd_web_start(port: int | None = None) -> None:
 
     actual_port = port or WEB_PORT
     print(f"Web Bridge starting on ws://127.0.0.1:{actual_port}")
-    print("Open one of the following in your browser:")
-    print(f"  - run `python -m http.server 8438 --directory web/static` then open http://127.0.0.1:8438")
+    print(f"Static files served at http://127.0.0.1:{actual_port}")
     print()
     print("Press Ctrl+C to stop.")
     print()
