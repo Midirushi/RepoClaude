@@ -85,7 +85,7 @@ export class Session {
     if (!sid) return;
     if (!confirm("确认关闭此会话？")) return;
     try {
-      await this.rpc.call("session.close", { session_id: sid });
+      await this.rpc.call("session.close", { session_id: sid, force: true });
       this.sids.delete(sid);
       this.titles.delete(sid);
       if (this.activeId === sid) {
@@ -213,8 +213,19 @@ export class Session {
     }
   }
 
-  // ---- 刷新列表（仅重渲染已知 sid，阶段一不实现 server 列表） ----
+  // ---- 刷新列表：从 server 获取所有 session ----
   async refreshList() {
+    try {
+      const result = await this.rpc.call("session.list", {});
+      for (const s of result.sessions || []) {
+        this._addOrUpdate(s.id, {
+          title: s.title || "新会话",
+          updatedAt: s.updated_at,
+        });
+      }
+    } catch (e) {
+      // 阶段一降级：只显示已知会话
+    }
     this._render();
   }
 }

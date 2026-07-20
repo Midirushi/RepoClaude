@@ -31,6 +31,8 @@ from repo_claude.core.bus.commands import (
     SessionCreateResult,
     SessionGetHistoryCommand,
     SessionGetHistoryResult,
+    SessionListCommand,
+    SessionListResult,
     SessionSendMessageCommand,
     SessionSendMessageResult,
 )
@@ -152,8 +154,14 @@ class CoreApp:
     async def _session_close_handler(self, params: dict[str, Any]) -> SessionCloseResult:
         assert self._sessions is not None
         cmd = SessionCloseCommand.model_validate(params)
-        await self._sessions.close(cmd.session_id)
+        await self._sessions.close(cmd.session_id, force=cmd.force)
         return SessionCloseResult(status="closed")
+
+    # 列出所有 session
+    async def _session_list_handler(self, _params: dict[str, Any]) -> SessionListResult:
+        assert self._sessions is not None
+        sessions = await self._sessions.list()
+        return SessionListResult(sessions=sessions)
 
     # 注册客户端事件订阅，可选先回放 events.jsonl 历史再接收实时流
     async def _subscribe_handler(self, params: dict[str, Any]) -> EventSubscribeResult:
@@ -267,6 +275,7 @@ class CoreApp:
         server.register("session.create", self._session_create_handler)
         server.register("session.send_message", self._session_send_handler)
         server.register("session.get_history", self._session_history_handler)
+        server.register("session.list", self._session_list_handler)
         server.register("session.close", self._session_close_handler)
         server.register("permission.respond", self._permission_respond_handler)
         server.register("session.compact", self._session_compact_handler)

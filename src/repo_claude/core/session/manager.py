@@ -147,11 +147,17 @@ class SessionManager:
             return run_id
 
     # 关闭指定 session 并更新 meta.json
-    async def close(self, sid: str) -> None:
+    async def close(self, sid: str, *, force: bool = False) -> None:
         session = self._get_session(sid)
         lock = self._locks[sid]
-        if lock.locked():
+        if lock.locked() and not force:
             raise HandlerError(SESSION_BUSY, "session busy")
+        if lock.locked() and force:
+            session.status = "closed"
+            session.updated_at = _now()
+            self._store.write_meta(session)
+            await self._bus.publish(SessionClosedEvent(session_id=sid, ts=session.updated_at))
+            return
         async with lock:
             session.status = "closed"
             session.updated_at = _now()
@@ -188,6 +194,14 @@ class SessionManager:
     async def get_history(self, sid: str) -> list[dict[str, Any]]:
         self._get_session(sid)
         return self._store.read_messages(sid)
+
+    # 列出所有 session（按更新时间倒序）
+    async def list(self) -> list[dict[str, Any]]:
+        return sorted(
+            [s.to_dict() for s in self._sessions.values()],
+            key=lambda x: x["updated_at"],
+            reverse=True,
+        )
 
     # 从内存索引取 session，不存在时抛 JSON-RPC 结构化错误
     def _get_session(self, sid: str) -> Session:

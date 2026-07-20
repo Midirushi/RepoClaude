@@ -10,6 +10,8 @@
 //   run.started/finished   → 状态标记
 //   session.waiting_for_input → 一轮结束，光标停止闪烁
 
+import { markdownToHtml } from "./markdown.js";
+
 export class Chat {
   constructor(rpc, session) {
     this.rpc = rpc;
@@ -95,9 +97,9 @@ export class Chat {
     } else if (t === "session.message_received") {
       // 服务端已收到用户消息的确认
     } else if (t === "llm.usage") {
-      // 阶段一不展示 token 统计
+      this._appendUsage(event);
     } else if (t === "llm.model_selected") {
-      // 阶段一不展示模型选择
+      this._appendModelSelected(event);
     } else if (t === "log.line") {
       // 阶段一不展示日志
     } else if (t === "context.compacted") {
@@ -142,6 +144,8 @@ export class Chat {
   _finishAssistant() {
     if (this.currentAssistantTextEl) {
       this.currentAssistantTextEl.classList.remove("streaming-cursor");
+      const text = this.currentAssistantTextEl.textContent;
+      this.currentAssistantTextEl.innerHTML = markdownToHtml(text);
     }
     this.currentAssistantEl = null;
     this.currentAssistantTextEl = null;
@@ -322,7 +326,7 @@ export class Chat {
     wrap.className = "message assistant";
     const content = document.createElement("div");
     content.className = "message-content";
-    content.textContent = text;
+    content.innerHTML = markdownToHtml(text);
     wrap.appendChild(content);
     this.messagesEl.appendChild(wrap);
     this._scrollToBottom();
@@ -348,6 +352,16 @@ export class Chat {
     wrap.appendChild(content);
     this.messagesEl.appendChild(wrap);
     this._scrollToBottom();
+  }
+
+  _appendUsage(event) {
+    const total = (event.input_tokens || 0) + (event.output_tokens || 0);
+    const context = event.context_pct != null ? ` · ${(event.context_pct * 100).toFixed(1)}%` : "";
+    this._appendSystem(`Token: ${total.toLocaleString()} (输入 ${(event.input_tokens || 0).toLocaleString()} / 输出 ${(event.output_tokens || 0).toLocaleString()}${context})`);
+  }
+
+  _appendModelSelected(event) {
+    this._appendSystem(`模型: ${event.model} (策略: ${event.strategy})`);
   }
 
   _toast(text, kind) {

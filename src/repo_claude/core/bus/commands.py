@@ -69,9 +69,18 @@ class SessionGetHistoryResult(BaseModel):
     messages: list[dict[str, Any]]
 
 
+class SessionListCommand(BaseModel):
+    type: Literal["session.list"] = "session.list"
+
+
+class SessionListResult(BaseModel):
+    sessions: list[dict[str, Any]]
+
+
 class SessionCloseCommand(BaseModel):
     type: Literal["session.close"] = "session.close"
     session_id: str
+    force: bool = False
 
 
 class SessionCloseResult(BaseModel):
@@ -108,6 +117,7 @@ Command = Annotated[
     | SessionCreateCommand
     | SessionSendMessageCommand
     | SessionGetHistoryCommand
+    | SessionListCommand
     | SessionCloseCommand
     | PermissionRespondCommand
     | SessionCompactCommand,

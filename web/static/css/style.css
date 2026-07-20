@@ -422,6 +422,31 @@ code, pre { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
   padding: 0;
 }
 
+/* 代码语法高亮 */
+.hl-keyword { color: #c792ea; font-weight: 600; }
+.hl-string { color: #c3e88d; }
+.hl-number { color: #f78c6c; }
+.hl-comment { color: #546e7a; font-style: italic; }
+.hl-builtin { color: #82aaff; }
+.hl-function { color: #82ccdd; }
+.hl-type { color: #ffcb6b; }
+
+[data-theme="dark"] .hl-keyword { color: #c792ea; }
+[data-theme="dark"] .hl-string { color: #c3e88d; }
+[data-theme="dark"] .hl-number { color: #f78c6c; }
+[data-theme="dark"] .hl-comment { color: #546e7a; }
+[data-theme="dark"] .hl-builtin { color: #82aaff; }
+[data-theme="dark"] .hl-function { color: #82ccdd; }
+[data-theme="dark"] .hl-type { color: #ffcb6b; }
+
+[data-theme="light"] .hl-keyword { color: #7c4dff; }
+[data-theme="light"] .hl-string { color: #00c853; }
+[data-theme="light"] .hl-number { color: #ff5252; }
+[data-theme="light"] .hl-comment { color: #9e9e9e; }
+[data-theme="light"] .hl-builtin { color: #2979ff; }
+[data-theme="light"] .hl-function { color: #00bcd4; }
+[data-theme="light"] .hl-type { color: #ff9800; }
+
 .message.system .message-content {
   background: var(--system-bubble);
   color: var(--text-primary);
