@@ -124,23 +124,16 @@ TUI 连接后可输入消息、看到 token 流式输出、工具调用折叠块
 
 ### 8. 启动 Web 客户端（浏览器）
 
-打开**终端 3**：
+打开**终端 2**：
 
 ```bash
-# 启动 Web Bridge（WebSocket ↔ daemon TCP 协议桥）
+# 启动 Web Bridge（同时提供 WebSocket 协议桥 + HTTP 静态文件）
 uv run repo web
 ```
 
-再打开**终端 4**，启动静态文件服务：
+在浏览器打开 http://127.0.0.1:8437 即可。
 
-```bash
-# 浏览器不能用 file:// 协议跑 WebSocket，需要本地 HTTP 服务
-uv run python -m http.server 8438 --directory web/static
-```
-
-在浏览器打开 http://127.0.0.1:8438。
-
-> **端口约定**：daemon 7437，bridge 8437，前端 HTTP 服务建议 8438。更多说明见 [web/README.md](web/README.md)。
+> **端口约定**：daemon 7437，bridge（含静态文件）8437。更多说明见 [web/README.md](web/README.md)。
 
 ### Windows 用户注意
 

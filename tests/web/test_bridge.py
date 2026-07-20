@@ -135,3 +135,67 @@ async def test_proxy_uses_max_frame_size() -> None:
     # 仅做静态校验：实际包大小由 import 路径与 server 的常量决定
     from web.bridge.server import MAX_FRAME_BYTES
     assert MAX_FRAME_BYTES == 64 * 1024 * 1024
+
+
+@pytest.mark.asyncio
+async def test_http_static_files(monkeypatch) -> None:
+    """Bridge 应能同时托管静态文件（HTTP GET）。"""
+
+    async def _http_get(host: str, port: int, path: str) -> tuple[int, bytes]:
+        reader, writer = await asyncio.open_connection(host, port)
+        request = f"GET {path} HTTP/1.1\r\nHost: {host}:{port}\r\nConnection: close\r\n\r\n"
+        writer.write(request.encode())
+        await writer.drain()
+        response = await reader.read()
+        writer.close()
+        await writer.wait_closed()
+        header, _, body = response.partition(b"\r\n\r\n")
+        status_line = header.split(b"\r\n")[0].decode()
+        status = int(status_line.split()[1])
+        return status, body
+
+    # 在临时端口上启动 Bridge（使用真实的 main handler）
+    ws_port = await _pick_port()
+    monkeypatch.setattr("web.bridge.server.WEB_PORT", ws_port)
+    monkeypatch.setattr("web.bridge.server.WEB_HOST", "127.0.0.1")
+    # 指向一个不存在的 daemon 端口，避免连接成功
+    fake_port = await _pick_port()
+    monkeypatch.setattr("web.bridge.server.DAEMON_PORT", fake_port)
+
+    from web.bridge.server import main as real_main
+
+    # 启动 bridge（在后台运行）
+    bridge_task = asyncio.create_task(real_main())
+    await asyncio.sleep(0.5)  # 等待服务器启动
+
+    try:
+        # 测试 index.html
+        status, body = await _http_get("127.0.0.1", ws_port, "/")
+        assert status == 200
+        text = body.decode()
+        assert "<!DOCTYPE html>" in text
+        assert "RepoClaude" in text
+
+        # 测试 CSS
+        status, body = await _http_get("127.0.0.1", ws_port, "/css/style.css")
+        assert status == 200
+        assert "RepoClaude Web" in body.decode()
+
+        # 测试 JS
+        status, body = await _http_get("127.0.0.1", ws_port, "/js/rpc.js")
+        assert status == 200
+        assert "RepoRpc" in body.decode()
+
+        # 测试 404
+        status, _ = await _http_get("127.0.0.1", ws_port, "/nonexistent")
+        assert status == 404
+
+        # 测试目录遍历防护
+        status, _ = await _http_get("127.0.0.1", ws_port, "/../pyproject.toml")
+        assert status == 403
+    finally:
+        bridge_task.cancel()
+        try:
+            await bridge_task
+        except asyncio.CancelledError:
+            pass

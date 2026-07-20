@@ -16,23 +16,19 @@ uv run repo-core
 # 终端 1：启动 daemon（必须先启动）
 uv run repo-core
 
-# 终端 2：启动 Web Bridge（WebSocket ↔ daemon TCP）
+# 终端 2：启动 Web Bridge（WebSocket ↔ daemon TCP + HTTP 静态文件）
 uv run repo web
 # 或直接启动：python -m web.bridge.server
-
-# 终端 3：启动前端静态文件服务
-uv run python -m http.server 8438 --directory web/static
 ```
 
-浏览器打开 http://127.0.0.1:8438。
+浏览器打开 http://127.0.0.1:8437 即可。
 
 **端口约定：**
 
 | 端口 | 用途 |
 |------|------|
 | 7437 | RepoClaude daemon（TCP + NDJSON） |
-| 8437 | Web Bridge（WebSocket） |
-| 8438 | 前端静态文件（本地 HTTP 服务） |
+| 8437 | Web Bridge（WebSocket + HTTP 静态文件） |
 
 **环境变量：**
 

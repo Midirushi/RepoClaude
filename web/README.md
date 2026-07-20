@@ -76,27 +76,16 @@ Forwarding to daemon at 127.0.0.1:7437
 
 ### 3. 打开前端
 
-由于阶段一是纯静态文件，**不能直接 `file://` 打开 `index.html`**——浏览器会拒绝 WebSocket
-连接到 `ws://`。需要起一个本地 HTTP server：
+Bridge 已内置 HTTP 静态文件托管，浏览器直接打开 http://127.0.0.1:8437 即可。
 
-```bash
-# 任选一种
-uv run python -m http.server 8438 --directory web/static
-# 或
-.venv/bin/python -m http.server 8438 --directory web/static
-```
-
-然后在浏览器打开 <http://127.0.0.1:8438>。
-
-> 阶段二会改为 Bridge 同时托管静态文件（一条命令起前端+后端），省去这步。
+> 如果静态文件有更新，刷新浏览器即可（无需重启 Bridge）。
 
 ## 端口约定
 
 | 端口 | 用途 |
 |------|------|
 | 7437 | RepoClaude daemon（TCP + NDJSON） |
-| 8437 | Web Bridge（WebSocket） |
-| 8438 | （推荐）本地 HTTP 服务前端静态资源 |
+| 8437 | Web Bridge（WebSocket + HTTP 静态文件） |
 
 ## 与 TUI / CLI 共存
 
@@ -142,4 +131,3 @@ const off = window.repo.rpc.onEvent(e => console.log(e.type, e))
 - 阶段一不展示：Markdown、代码高亮、Trace 详情、模型选择、token 统计
 - 会话列表只显示本浏览器创建/看到的；不列举 daemon 全部历史 session
   （daemon 暂未提供 `session.list` RPC）
-- 没有内置的 HTTP 静态文件服务（阶段二合并到 Bridge）
