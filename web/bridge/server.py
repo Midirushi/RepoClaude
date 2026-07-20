@@ -103,7 +103,15 @@ async def proxy(ws: ServerConnection) -> None:
 async def _http_handler(
     _connection: ServerConnection, request: Request
 ) -> Response | None:
-    """处理非 WebSocket 的 HTTP GET 请求：托管静态文件。"""
+    """处理非 WebSocket 的 HTTP GET 请求：托管静态文件。
+    
+    对于 WebSocket 升级请求，返回 None 让 websockets 库继续处理握手。
+    """
+    upgrade = request.headers.get("Upgrade", "").lower()
+    connection = request.headers.get("Connection", "").lower()
+    if upgrade == "websocket" or "upgrade" in connection:
+        return None
+
     path = request.path
 
     # 安全路径：限制在 _STATIC_DIR 内
