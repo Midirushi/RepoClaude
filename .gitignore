@@ -22,3 +22,6 @@ workspace/
 sessions/
 traces/
 logs/
+
+# 本地调试图片（不上传）
+docs/images/
