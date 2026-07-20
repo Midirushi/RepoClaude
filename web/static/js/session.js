@@ -99,6 +99,21 @@ export class Session {
     }
   }
 
+  // ---- 压缩上下文 ----
+  async compact(sid) {
+    sid = sid || this.activeId;
+    if (!sid) return;
+    this._toast("正在压缩上下文...", "info");
+    try {
+      const result = await this.rpc.call("session.compact", { session_id: sid });
+      const saved = result.saved_tokens || 0;
+      const summary = result.summary_tokens || 0;
+      this._toast(`压缩完成: 节省 ${saved.toLocaleString()} tokens (摘要 ${summary.toLocaleString()} tokens)`, "success");
+    } catch (e) {
+      this._toast(`压缩失败: ${e.message}`, "error");
+    }
+  }
+
   // ---- 事件钩子（外部创建的会话） ----
   handleCreated(event) {
     this._addOrUpdate(event.session_id, {
@@ -143,11 +158,17 @@ export class Session {
       div.innerHTML = `
         <div class="title">${this._escape(title)}</div>
         <div class="meta">${this._escape(meta)}</div>
+        <button class="compact-btn" title="压缩上下文" aria-label="压缩上下文">⚙</button>
         <button class="close-btn" title="关闭会话" aria-label="关闭会话">✕</button>
       `;
       div.onclick = (e) => {
-        if (e.target.classList.contains("close-btn")) return;
+        if (e.target.classList.contains("close-btn") || e.target.classList.contains("compact-btn")) return;
         this.load(item.sid);
+      };
+      const compactBtn = div.querySelector(".compact-btn");
+      compactBtn.onclick = (e) => {
+        e.stopPropagation();
+        this.compact(item.sid);
       };
       const closeBtn = div.querySelector(".close-btn");
       closeBtn.onclick = (e) => {

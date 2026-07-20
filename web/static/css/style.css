@@ -265,6 +265,24 @@ code, pre { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
   color: var(--text-tertiary);
   font-size: 11px;
 }
+.session-item .compact-btn {
+  position: absolute;
+  right: 32px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s;
+}
+.session-item:hover .compact-btn { opacity: 1; }
+.session-item .compact-btn:hover { background: var(--accent-bg); color: var(--accent); }
+
 .session-item .close-btn {
   position: absolute;
   right: 8px;
