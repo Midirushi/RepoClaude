@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
-import re
 from datetime import UTC, datetime
 from typing import Any
 
@@ -47,21 +46,6 @@ _SYSTEM_PROMPT = (
 # 返回当前 UTC 时间的 ISO 8601 字符串
 def _now() -> str:
     return datetime.now(UTC).isoformat()
-
-
-# 匹配 CODEBLOCK 占位符（CODEBLOCK0, CODE_BLOCK_1 等），一些模型（如 deepseek-chat）
-# 用它来引用之前的代码块而非重新输出完整代码
-_CODEBLOCK_PATTERN = re.compile(r"\bCODE[_ ]?BLOCK[_ ]?\d+\b", re.IGNORECASE)
-
-
-# 从单个 token 中剥离 CODEBLOCK 占位符；返回空字符串表示该 token 完全是占位符
-# 注意：流式 token 可能切分关键词，但实测 deepseek 输出通常是完整单词
-def _strip_codeblock_placeholder(token: str) -> str:
-    if not token:
-        return token
-    if _CODEBLOCK_PATTERN.search(token):
-        return _CODEBLOCK_PATTERN.sub("", token)
-    return token
 
 
 class AnthropicProvider:
@@ -141,14 +125,10 @@ class AnthropicProvider:
                 )
                 async with client.messages.stream(**kwargs) as stream:
                     async for text in stream.text_stream:
-                        # Filter out CODEBLOCK placeholders some models emit
-                        # (e.g. deepseek-chat) instead of actual code blocks.
-                        cleaned = _strip_codeblock_placeholder(text)
-                        if cleaned:
-                            # Only publish token events on the first attempt to avoid TUI duplicates
-                            if attempt == 1:
-                                await bus.publish(LlmTokenEvent(run_id=run_id, token=cleaned, ts=_now()))
-                            text_parts.append(cleaned)
+                        # Only publish token events on the first attempt to avoid TUI duplicates
+                        if attempt == 1:
+                            await bus.publish(LlmTokenEvent(run_id=run_id, token=text, ts=_now()))
+                        text_parts.append(text)
                     try:
                         final_message = await stream.get_final_message()
                     except AssertionError:

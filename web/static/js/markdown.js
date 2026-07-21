@@ -9,7 +9,7 @@ export function markdownToHtml(text) {
   let html = text.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
     const idx = codeBlocks.length;
     codeBlocks.push({ lang, code: code.trim() });
-    return `\x00CODE_BLOCK_${idx}\x00`;
+    return `\x00CB${idx}\x00`;
   });
   html = escapeHtml(html);
   html = processInlineCode(html);
@@ -18,9 +18,8 @@ export function markdownToHtml(text) {
   html = processTables(html);
   html = processLists(html);
   html = processHeadings(html);
-  html = processCodeblockPlaceholders(html);
   html = processParagraphs(html);
-  html = html.replace(/\x00CODE_BLOCK_(\d+)\x00/g, (_, idx) => {
+  html = html.replace(/\x00CB(\d+)\x00/g, (_, idx) => {
     const { lang, code } = codeBlocks[parseInt(idx)];
     const highlighted = highlightCode(code, lang);
     const langLabel = lang || "text";
@@ -266,25 +265,6 @@ function processHeadings(html) {
   html = html.replace(/^###\s+(.*$)/gim, '<h3>$1</h3>');
   html = html.replace(/^##\s+(.*$)/gim, '<h2>$1</h2>');
   html = html.replace(/^#\s+(.*$)/gim, '<h1>$1</h1>');
-  return html;
-}
-
-// 兜底：把 LLM 输出的 CODEBLOCK 占位符（如 CODEBLOCK0, CODE_BLOCK_1）
-// 替换为醒目的警告框，提示用户重新提问以获取完整代码
-function processCodeblockPlaceholders(html) {
-  // 匹配独立成行的 CODEBLOCK 占位符（可能被 <p> 包裹）
-  const blockPattern = /<p>\s*CODE[_ ]?BLOCK[_ ]?\d+\s*<\/p>/gi;
-  if (blockPattern.test(html)) {
-    // 重建 regex 避免 lastIndex 问题
-    html = html.replace(/<p>\s*CODE[_ ]?BLOCK[_ ]?\d+\s*<\/p>/gi,
-      '<div class="codeblock-warning">⚠️ AI 返回了代码占位符而非实际代码。请回复"请重新输出完整代码"获取完整内容。</div>');
-  }
-  // 匹配行内出现的占位符
-  const inlinePattern = /\bCODE[_ ]?BLOCK[_ ]?\d+\b/gi;
-  if (inlinePattern.test(html)) {
-    html = html.replace(/\bCODE[_ ]?BLOCK[_ ]?\d+\b/gi,
-      '<span class="codeblock-warning-inline">⚠️ [代码占位符]</span>');
-  }
   return html;
 }
 
