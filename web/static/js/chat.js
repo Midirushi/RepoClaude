@@ -63,7 +63,32 @@ export class Chat {
       sid = created;
     }
 
-    this._appendUserMessage(text);
+    // 编辑模式：先 truncate 掉原消息及之后的所有内容
+    const pendingEditWrap = this._consumePendingEdit();
+    if (pendingEditWrap) {
+      const beforeTs = pendingEditWrap.dataset.ts;
+      if (beforeTs) {
+        try {
+          await this.rpc.call("session.truncate", {
+            session_id: sid,
+            before_ts: beforeTs,
+          });
+        } catch (e) {
+          this._appendError(`编辑失败（截断历史时）: ${e.message}`);
+          this._setSending(false);
+          return;
+        }
+      }
+      // 清除原 user 消息及之后的所有 DOM
+      let cur = pendingEditWrap;
+      while (cur) {
+        const next = cur.nextElementSibling;
+        cur.remove();
+        cur = next;
+      }
+    }
+
+    this._appendUserMessage(text, new Date().toISOString());
     this.inputEl.value = "";
     this.inputEl.style.height = "auto";
     this._setSending(true);
@@ -296,22 +321,31 @@ export class Chat {
   }
 
   // ---- 历史渲染 ----
-  renderHistory(messages) {
+  renderHistory(messages, userMessageTs) {
     // 移除欢迎页
     const welcome = document.getElementById("welcome");
     if (welcome) welcome.remove();
     this.messagesEl.innerHTML = "";
+    const tsQueue = Array.isArray(userMessageTs) ? [...userMessageTs] : [];
     for (const msg of messages || []) {
       const content = msg.content;
       // content 可能是字符串，也可能是 Anthropic 的 block 列表
       if (typeof content === "string") {
-        if (msg.role === "user") this._appendUserMessage(content);
-        else this._appendAssistantMessage(content);
+        if (msg.role === "user") {
+          const ts = tsQueue.shift();
+          this._appendUserMessage(content, ts);
+        } else {
+          this._appendAssistantMessage(content);
+        }
       } else if (Array.isArray(content)) {
         for (const block of content) {
           if (block.type === "text") {
-            if (msg.role === "user") this._appendUserMessage(block.text);
-            else this._appendAssistantMessage(block.text);
+            if (msg.role === "user") {
+              const ts = tsQueue.shift();
+              this._appendUserMessage(block.text, ts);
+            } else {
+              this._appendAssistantMessage(block.text);
+            }
           } else if (block.type === "tool_use") {
             // 历史里的 tool_use 只展示不可执行的占位
             const div = document.createElement("div");
@@ -352,18 +386,30 @@ export class Chat {
   }
 
   // ---- 内部工具 ----
-  _appendUserMessage(text) {
+  _appendUserMessage(text, tsMeta) {
     const welcome = document.getElementById("welcome");
     if (welcome) welcome.remove();
     const wrap = document.createElement("div");
     wrap.className = "message user";
+    if (tsMeta) wrap.dataset.ts = tsMeta;
     const content = document.createElement("div");
     content.className = "message-content";
     content.textContent = text;
     wrap.appendChild(content);
+    const actions = document.createElement("div");
+    actions.className = "msg-actions";
+    actions.innerHTML = `
+      <button class="msg-action-btn edit-btn" title="编辑并重发">✏</button>
+    `;
+    const editBtn = actions.querySelector(".edit-btn");
+    editBtn.onclick = (e) => {
+      e.stopPropagation();
+      this._editUserMessage(wrap, text);
+    };
+    wrap.appendChild(actions);
     const ts = document.createElement("div");
     ts.className = "ts";
-    ts.textContent = this._formatTime(new Date());
+    ts.textContent = this._formatTime(tsMeta ? new Date(tsMeta) : new Date());
     wrap.appendChild(ts);
     this.messagesEl.appendChild(wrap);
     this._scrollToBottom();
@@ -376,12 +422,94 @@ export class Chat {
     content.className = "message-content";
     content.innerHTML = markdownToHtml(text);
     wrap.appendChild(content);
+    const actions = document.createElement("div");
+    actions.className = "msg-actions";
+    actions.innerHTML = `
+      <button class="msg-action-btn copy-msg-btn" title="复制">📋</button>
+      <button class="msg-action-btn regen-btn" title="重新生成">🔄</button>
+    `;
+    const copyBtn = actions.querySelector(".copy-msg-btn");
+    copyBtn.onclick = (e) => {
+      e.stopPropagation();
+      navigator.clipboard.writeText(text).then(() => {
+        copyBtn.textContent = "✓";
+        setTimeout(() => { copyBtn.textContent = "📋"; }, 1200);
+      });
+    };
+    const regenBtn = actions.querySelector(".regen-btn");
+    regenBtn.onclick = (e) => {
+      e.stopPropagation();
+      this._regenerateFromAssistant(wrap);
+    };
+    wrap.appendChild(actions);
     const ts = document.createElement("div");
     ts.className = "ts";
     ts.textContent = this._formatTime(new Date());
     wrap.appendChild(ts);
     this.messagesEl.appendChild(wrap);
     this._scrollToBottom();
+  }
+
+  // 编辑用户消息：把原内容填入输入框，用户修改后按 Cmd/Ctrl+Enter 重发
+  _editUserMessage(wrap, originalText) {
+    this.inputEl.value = originalText;
+    this.inputEl.focus();
+    this._setPendingEdit(wrap);
+    this._toast("编辑消息后按 Enter 发送（将清空之后的所有消息）", "info");
+  }
+
+  _setPendingEdit(userWrap) {
+    this._pendingEditWrap = userWrap;
+  }
+
+  _consumePendingEdit() {
+    const w = this._pendingEditWrap;
+    this._pendingEditWrap = null;
+    return w;
+  }
+
+  // 重新生成：找到上一条 user 消息，truncate 到它之前，重发原内容
+  async _regenerateFromAssistant(assistantWrap) {
+    const sid = this.session?.activeId;
+    if (!sid) return;
+    const prev = assistantWrap.previousElementSibling;
+    let userWrap = prev;
+    while (userWrap && !userWrap.classList.contains("user")) {
+      userWrap = userWrap.previousElementSibling;
+    }
+    if (!userWrap) {
+      this._appendSystem("找不到对应的用户消息");
+      return;
+    }
+    const contentEl = userWrap.querySelector(".message-content");
+    const text = contentEl ? contentEl.textContent : "";
+    const beforeTs = userWrap.dataset.ts;
+    if (!beforeTs) {
+      this._appendSystem("无法定位消息时间戳");
+      return;
+    }
+    try {
+      const result = await this.rpc.call("session.truncate", {
+        session_id: sid,
+        before_ts: beforeTs,
+      });
+      // 清除该 user 消息及其后所有 DOM
+      let cur = userWrap;
+      while (cur) {
+        const next = cur.nextElementSibling;
+        cur.remove();
+        cur = next;
+      }
+      this._setSending(true);
+      const res = await this.rpc.call("session.send_message", {
+        session_id: sid,
+        content: text,
+      });
+      if (res?.run_id) this._currentRunId = res.run_id;
+    } catch (e) {
+      this._setSending(false);
+      this._appendError(`重新生成失败: ${e.message}`);
+    }
   }
 
   _appendSystem(text) {

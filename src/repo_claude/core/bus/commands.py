@@ -67,6 +67,17 @@ class SessionGetHistoryCommand(BaseModel):
 
 class SessionGetHistoryResult(BaseModel):
     messages: list[dict[str, Any]]
+    user_message_ts: list[str] = []
+
+
+class SessionTruncateCommand(BaseModel):
+    type: Literal["session.truncate"] = "session.truncate"
+    session_id: str
+    before_ts: str
+
+
+class SessionTruncateResult(BaseModel):
+    removed: int
 
 
 class SessionListCommand(BaseModel):
@@ -152,6 +163,7 @@ Command = Annotated[
     | SessionCompactCommand
     | SkillListCommand
     | TraceReadCommand
-    | RunCancelCommand,
+    | RunCancelCommand
+    | SessionTruncateCommand,
     Discriminator("type"),
 ]

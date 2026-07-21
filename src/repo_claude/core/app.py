@@ -37,6 +37,8 @@ from repo_claude.core.bus.commands import (
     SessionListResult,
     SessionSendMessageCommand,
     SessionSendMessageResult,
+    SessionTruncateCommand,
+    SessionTruncateResult,
     SkillListCommand,
     SkillListResult,
     TraceReadCommand,
@@ -191,7 +193,15 @@ class CoreApp:
         assert self._sessions is not None
         cmd = SessionGetHistoryCommand.model_validate(params)
         messages = await self._sessions.get_history(cmd.session_id)
-        return SessionGetHistoryResult(messages=messages)
+        user_ts = self._sessions._store.read_user_message_ts(cmd.session_id)
+        return SessionGetHistoryResult(messages=messages, user_message_ts=user_ts)
+
+    # 截断 thread：删除 before_ts 及之后的所有消息（用于编辑/重新生成）
+    async def _session_truncate_handler(self, params: dict[str, Any]) -> SessionTruncateResult:
+        assert self._sessions is not None
+        cmd = SessionTruncateCommand.model_validate(params)
+        removed = await self._sessions.truncate_before_ts(cmd.session_id, cmd.before_ts)
+        return SessionTruncateResult(removed=removed)
 
     # 接收客户端权限审批响应，resolve 对应挂起的 Future
     async def _permission_respond_handler(self, params: dict[str, Any]) -> PermissionRespondResult:
@@ -379,6 +389,7 @@ class CoreApp:
         server.register("session.create", self._session_create_handler)
         server.register("session.send_message", self._session_send_handler)
         server.register("session.get_history", self._session_history_handler)
+        server.register("session.truncate", self._session_truncate_handler)
         server.register("session.list", self._session_list_handler)
         server.register("session.close", self._session_close_handler)
         server.register("permission.respond", self._permission_respond_handler)

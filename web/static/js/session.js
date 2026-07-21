@@ -64,7 +64,7 @@ export class Session {
         this.chat.clear();
         return;
       }
-      this.chat.renderHistory(result.messages);
+      this.chat.renderHistory(result.messages, result.user_message_ts);
       // 推断标题：取首条 user 消息前 30 字
       const firstUser = result.messages.find((m) => m.role === "user");
       if (firstUser) {

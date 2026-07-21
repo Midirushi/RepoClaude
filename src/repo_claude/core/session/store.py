@@ -107,6 +107,24 @@ class SessionStore:
         from repo_claude.core.compact.budget import truncate_tool_results
         return truncate_tool_results(messages)
 
+    # 读取 user 消息的 ts 列表（用于前端定位并触发 truncate / regenerate）
+    # 仅返回 role=user 且通过 send_message 追加（无 run_id）的消息 ts。
+    def read_user_message_ts(self, sid: str) -> list[str]:
+        path = self.session_dir(sid) / "thread.jsonl"
+        if not path.exists():
+            return []
+        ts_list: list[str] = []
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if not line:
+                continue
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if row.get("role") == "user" and "content" in row and isinstance(row["content"], str):
+                ts_list.append(row.get("ts", ""))
+        return ts_list
+
     # 裁掉尾部未配对 tool_use 以及其后的消息，避免 Anthropic messages.invalid
     def _trim_orphan_tool_use(self, messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
         pending: set[str] = set()
@@ -140,6 +158,36 @@ class SessionStore:
             for msg in messages:
                 row: dict[str, Any] = {"ts": _now(), "role": msg["role"], "content": msg["content"]}
                 f.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+    # 截断 thread.jsonl：删除 ts >= before_ts 的所有行，原文件备份。
+    # 用于"编辑消息后重发" / "重新生成" 场景。
+    def truncate_before_ts(self, sid: str, before_ts: str) -> int:
+        path = self.session_dir(sid) / "thread.jsonl"
+        if not path.exists():
+            return 0
+        kept: list[str] = []
+        removed = 0
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if not line:
+                continue
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:
+                kept.append(line)
+                continue
+            if row.get("ts", "") >= before_ts:
+                removed += 1
+                continue
+            kept.append(line)
+        if removed == 0:
+            return 0
+        ts_str = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
+        bak = self.session_dir(sid) / f"thread_{ts_str}.jsonl.bak"
+        path.rename(bak)
+        with path.open("w", encoding="utf-8") as f:
+            for line in kept:
+                f.write(line + "\n")
+        return removed
 
     # 读取 notes.md 全文，文件不存在时返回空字符串
     def read_notes(self, sid: str) -> str:

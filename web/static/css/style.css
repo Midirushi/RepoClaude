@@ -605,6 +605,42 @@ code, pre { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
   text-align: left;
   align-self: flex-start;
 }
+
+/* 消息悬停操作按钮 */
+.message .msg-actions {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+  background: var(--bg-primary);
+  padding: 2px 4px;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  z-index: 5;
+}
+.message:hover .msg-actions {
+  opacity: 1;
+}
+.message {
+  position: relative;
+}
+.msg-action-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px 4px;
+  border-radius: 3px;
+  transition: all 0.1s;
+}
+.msg-action-btn:hover {
+  background: var(--bg-hover);
+  color: var(--accent);
+}
 .message.system .ts {
   align-self: center;
   text-align: center;

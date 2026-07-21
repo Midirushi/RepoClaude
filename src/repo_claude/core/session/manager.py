@@ -195,6 +195,21 @@ class SessionManager:
         self._get_session(sid)
         return self._store.read_messages(sid)
 
+    # 截断 thread：删除 ts >= before_ts 的所有消息（含该 user 消息及其回复）
+    async def truncate_before_ts(self, sid: str, before_ts: str) -> int:
+        session = self._get_session(sid)
+        lock = self._locks[sid]
+        if lock.locked():
+            from repo_claude.core.bus.errors import HandlerError, SESSION_BUSY
+            raise HandlerError(SESSION_BUSY, "session busy")
+        async with lock:
+            removed = self._store.truncate_before_ts(sid, before_ts)
+            if removed > 0:
+                # 清理 session.run_ids 中对应 run 的引用（简化处理：不精确清理）
+                session.updated_at = _now()
+                self._store.write_meta(session)
+            return removed
+
     # 列出所有 session（按更新时间倒序）
     async def list(self) -> list[dict[str, Any]]:
         return sorted(
