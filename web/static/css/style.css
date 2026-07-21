@@ -499,6 +499,28 @@ code, pre { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
   border-radius: 0;
 }
 
+/* CODEBLOCK 占位符警告框 */
+.codeblock-warning {
+  margin: 8px 0;
+  padding: 10px 14px;
+  background: rgba(251, 191, 36, 0.12);
+  border: 1px solid #fbbf24;
+  border-left: 4px solid #fbbf24;
+  border-radius: var(--radius);
+  color: #fbbf24;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.codeblock-warning-inline {
+  display: inline;
+  padding: 1px 6px;
+  background: rgba(251, 191, 36, 0.15);
+  border-radius: 3px;
+  color: #fbbf24;
+  font-size: 0.9em;
+  font-weight: 600;
+}
+
 /* 代码语法高亮 */
 .hl-keyword { color: #c792ea; font-weight: 600; }
 .hl-string { color: #c3e88d; }
