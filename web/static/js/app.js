@@ -72,6 +72,10 @@ const sendBtn = document.getElementById("send");
 const skillCompleter = new SkillCompleter(rpc, inputEl);
 
 sendBtn.onclick = () => {
+  if (chat._hasPendingInput) {
+    chat.cancelRun();
+    return;
+  }
   skillCompleter.hide();
   chat.send();
 };

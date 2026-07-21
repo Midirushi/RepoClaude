@@ -188,6 +188,16 @@ code, pre { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
 .primary-btn { background: var(--accent); border-color: var(--accent); color: var(--text-inverse); }
 .primary-btn:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
 .primary-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.primary-btn.stop-btn {
+  background: var(--error);
+  border-color: var(--error);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+.primary-btn.stop-btn:hover { background: var(--error-hover, #dc2626); border-color: var(--error-hover, #dc2626); }
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
 
 /* ---------- 侧边栏 ---------- */
 .sidebar {

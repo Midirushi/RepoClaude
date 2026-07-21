@@ -23,6 +23,8 @@ from repo_claude.core.bus.commands import (
     PermissionRespondCommand,
     PermissionRespondResult,
     PongResult,
+    RunCancelCommand,
+    RunCancelResult,
     SessionCloseCommand,
     SessionCloseResult,
     SessionCompactCommand,
@@ -41,6 +43,7 @@ from repo_claude.core.bus.commands import (
     TraceReadResult,
 )
 from repo_claude.core.bus.envelope import EventPushEnvelope
+from repo_claude.core.bus.events import RunFinishedEvent, SessionWaitingForInputEvent
 from repo_claude.core.config import RepoConfig, get_config
 from repo_claude.core.events.bus import EventBus
 from repo_claude.core.llm.provider import AnthropicProvider
@@ -71,6 +74,7 @@ class CoreApp:
         self._trace: TraceWriter | None = None
         self._config: RepoConfig | None = None
         self._running_runs: set[asyncio.Task[Any]] = set()
+        self._session_tasks: dict[str, asyncio.Task[Any]] = {}
         self._sessions: SessionManager | None = None
         self._permission_manager: PermissionManager | None = None
         self._mcp_manager: McpServerManager | None = None
@@ -120,12 +124,67 @@ class CoreApp:
         session = await self._sessions.create(mode=cmd.mode, title=cmd.title)
         return SessionCreateResult(session_id=session.id, status=session.status)
 
-    # 向 session 发送一条用户消息并同步等待对应 run 完成
+    # 向 session 发送一条用户消息：预生成 run_id 并启动后台 task，立即返回
     async def _session_send_handler(self, params: dict[str, Any]) -> SessionSendMessageResult:
         assert self._sessions is not None
         cmd = SessionSendMessageCommand.model_validate(params)
-        run_id = await self._sessions.send_message(cmd.session_id, cmd.content)
+        run_id = new_run_id()
+        sid = cmd.session_id
+
+        # 取消该 session 上正在运行的旧 task（理论上不会发生，因为前端有 _hasPendingInput 锁）
+        prev_task = self._session_tasks.get(sid)
+        if prev_task is not None and not prev_task.done():
+            prev_task.cancel()
+
+        task = asyncio.create_task(self._run_session_task(sid, cmd.content, run_id))
+        self._session_tasks[sid] = task
+        task.add_done_callback(lambda _t, k=sid: self._session_tasks.pop(k, None))
         return SessionSendMessageResult(run_id=run_id)
+
+    # 包装单次 session run：处理取消时发布对应事件以保持前端状态一致
+    async def _run_session_task(self, sid: str, content: str, run_id: str) -> None:
+        assert self._sessions is not None
+        try:
+            await self._sessions.send_message(sid, content, run_id=run_id)
+        except asyncio.CancelledError:
+            try:
+                await self._bus.publish(
+                    RunFinishedEvent(
+                        run_id=run_id,
+                        status="failed",
+                        reason="cancelled",
+                        steps=0,
+                        ts=_now(),
+                    )
+                )
+                await self._bus.publish(
+                    SessionWaitingForInputEvent(
+                        session_id=sid,
+                        last_run_id=run_id,
+                        ts=_now(),
+                    )
+                )
+            except Exception:  # noqa: BLE001
+                logger.exception("failed to publish cancellation events")
+            raise
+
+    # 取消指定 session 上正在运行的 run
+    async def _run_cancel_handler(self, params: dict[str, Any]) -> RunCancelResult:
+        cmd = RunCancelCommand.model_validate(params)
+        task = self._session_tasks.get(cmd.session_id)
+        if task is None or task.done():
+            return RunCancelResult(cancelled=False, run_id=None)
+        run_id = None
+        try:
+            run_id = task.get_name()
+        except Exception:  # noqa: BLE001
+            pass
+        task.cancel()
+        try:
+            await task
+        except (asyncio.CancelledError, Exception):
+            pass
+        return RunCancelResult(cancelled=True, run_id=run_id)
 
     # 返回 session 的完整 Anthropic messages 历史
     async def _session_history_handler(self, params: dict[str, Any]) -> SessionGetHistoryResult:
@@ -326,6 +385,7 @@ class CoreApp:
         server.register("session.compact", self._session_compact_handler)
         server.register("skill.list", self._skill_list_handler)
         server.register("trace.read", self._trace_read_handler)
+        server.register("run.cancel", self._run_cancel_handler)
 
         addr = await server.start()
         logger.info("repo-core %s listening addr=%s", repo_claude.__version__, addr)

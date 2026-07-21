@@ -60,8 +60,26 @@ export class Chat {
 
   _setSending(sending) {
     this._hasPendingInput = sending;
-    this.sendBtn.disabled = sending;
-    this.sendBtn.textContent = sending ? "..." : "发送 →";
+    if (sending) {
+      this.sendBtn.textContent = "■";
+      this.sendBtn.classList.add("stop-btn");
+      this.sendBtn.title = "停止生成";
+    } else {
+      this.sendBtn.textContent = "发送 →";
+      this.sendBtn.classList.remove("stop-btn");
+      this.sendBtn.title = "发送";
+    }
+  }
+
+  async cancelRun() {
+    const sid = this.session.activeId;
+    if (!sid) return;
+    try {
+      await this.rpc.call("run.cancel", { session_id: sid });
+      this._appendSystem("已中断");
+    } catch (e) {
+      this._appendError(`中断失败: ${e.message}`);
+    }
   }
 
   // ---- 事件路由 ----
