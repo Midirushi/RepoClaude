@@ -20,6 +20,7 @@
         <span class="version" id="status-version"></span>
       </div>
       <div class="actions">
+        <button id="trace-toggle" class="icon-btn" title="Trace 面板" aria-label="Trace 面板">📡</button>
         <button id="theme-toggle" class="icon-btn" title="切换主题" aria-label="切换主题">☀</button>
         <button id="new-session-top" class="primary-btn" title="新建会话" aria-label="新建会话">⏻ 新会话</button>
       </div>
@@ -86,6 +87,22 @@
 
     <!-- 状态提示（连接错误、运行结束等） -->
     <div class="toast" id="toast" hidden></div>
+
+    <!-- Trace 面板 -->
+    <div class="trace-panel" id="trace-panel">
+      <div class="trace-header">
+        <span class="trace-title">Trace</span>
+        <select id="trace-filter" class="trace-filter">
+          <option value="all">全部</option>
+          <option value="ipc">IPC</option>
+          <option value="event">Event</option>
+          <option value="llm">LLM</option>
+        </select>
+        <button id="trace-clear" class="trace-btn">清空</button>
+        <button id="trace-close" class="trace-btn">✕</button>
+      </div>
+      <div class="trace-list" id="trace-list"></div>
+    </div>
   </div>
 
   <script type="module" src="js/app.js"></script>

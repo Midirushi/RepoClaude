@@ -117,6 +117,17 @@ class SkillListResult(BaseModel):
     skills: list[dict[str, Any]]
 
 
+class TraceReadCommand(BaseModel):
+    type: Literal["trace.read"] = "trace.read"
+    lines: int = 100
+    run_id: str | None = None
+    layer: str | None = None
+
+
+class TraceReadResult(BaseModel):
+    records: list[dict[str, Any]]
+
+
 # 根据 type 字段决定命令类型的判别联合
 Command = Annotated[
     PingCommand
@@ -129,6 +140,7 @@ Command = Annotated[
     | SessionCloseCommand
     | PermissionRespondCommand
     | SessionCompactCommand
-    | SkillListCommand,
+    | SkillListCommand
+    | TraceReadCommand,
     Discriminator("type"),
 ]

@@ -37,6 +37,8 @@ from repo_claude.core.bus.commands import (
     SessionSendMessageResult,
     SkillListCommand,
     SkillListResult,
+    TraceReadCommand,
+    TraceReadResult,
 )
 from repo_claude.core.bus.envelope import EventPushEnvelope
 from repo_claude.core.config import RepoConfig, get_config
@@ -180,6 +182,32 @@ class CoreApp:
             ]
         )
 
+    # 读取 trace 文件末尾 N 条记录
+    async def _trace_read_handler(self, params: dict[str, Any]) -> TraceReadResult:
+        import json as _json
+        assert self._config is not None
+        trace_path = Path(self._config.trace.file).expanduser()
+        if not trace_path.exists():
+            return TraceReadResult(records=[])
+        cmd = TraceReadCommand.model_validate(params)
+        all_lines = trace_path.read_text().splitlines()
+        records: list[dict[str, Any]] = []
+        for line in all_lines:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                rec = _json.loads(line)
+            except _json.JSONDecodeError:
+                continue
+            if cmd.run_id is not None and rec.get("run_id") != cmd.run_id:
+                continue
+            if cmd.layer is not None and rec.get("layer") != cmd.layer:
+                continue
+            records.append(rec)
+        records = records[-cmd.lines:]
+        return TraceReadResult(records=records)
+
     # 注册客户端事件订阅，可选先回放 events.jsonl 历史再接收实时流
     async def _subscribe_handler(self, params: dict[str, Any]) -> EventSubscribeResult:
         cmd = EventSubscribeCommand.model_validate(params)
@@ -297,6 +325,7 @@ class CoreApp:
         server.register("permission.respond", self._permission_respond_handler)
         server.register("session.compact", self._session_compact_handler)
         server.register("skill.list", self._skill_list_handler)
+        server.register("trace.read", self._trace_read_handler)
 
         addr = await server.start()
         logger.info("repo-core %s listening addr=%s", repo_claude.__version__, addr)

@@ -7,12 +7,14 @@ import { Session } from "./session.js";
 import { Chat } from "./chat.js";
 import { Permission } from "./permission.js";
 import { SkillCompleter } from "./skill.js";
+import { TracePanel } from "./trace.js";
 
 const rpc = new RepoRpc();
 const theme = new Theme();
 const chat = new Chat(rpc, null);   // 先给 null，session 构造完后再注入
 const session = new Session(rpc, chat);
 const permission = new Permission(rpc);
+const tracePanel = new TracePanel(rpc);
 chat.session = session;
 
 theme.init();
@@ -89,6 +91,7 @@ inputEl.addEventListener("input", () => {
 });
 
 document.getElementById("theme-toggle").onclick = () => theme.toggle();
+document.getElementById("trace-toggle").onclick = () => tracePanel.toggle();
 document.getElementById("new-session-top").onclick = () => session.create();
 document.getElementById("new-session-btn").onclick = () => session.create();
 
@@ -174,4 +177,4 @@ async function bootstrap() {
 bootstrap();
 
 // 暴露给 console 方便调试
-window.repo = { rpc, session, chat, permission, theme, toast, skillCompleter };
+window.repo = { rpc, session, chat, permission, theme, toast, skillCompleter, tracePanel };
