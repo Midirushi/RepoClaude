@@ -22,7 +22,15 @@ export function markdownToHtml(text) {
   html = html.replace(/\x00CODE_BLOCK_(\d+)\x00/g, (_, idx) => {
     const { lang, code } = codeBlocks[parseInt(idx)];
     const highlighted = highlightCode(code, lang);
-    return `<pre class="code-block" data-lang="${lang || ""}"><code>${highlighted}</code></pre>`;
+    const langLabel = lang || "text";
+    const encodedCode = encodeURIComponent(code);
+    return `<div class="code-block-wrapper" data-lang="${langLabel}">
+      <div class="code-block-header">
+        <span class="code-block-lang">${langLabel}</span>
+        <button class="code-copy-btn" data-code="${encodedCode}" title="复制代码">复制</button>
+      </div>
+      <pre class="code-block" data-lang="${lang || ""}"><code>${highlighted}</code></pre>
+    </div>`;
   });
   return html;
 }

@@ -452,6 +452,53 @@ code, pre { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
   padding: 0;
 }
 
+/* 代码块包装器：头部 + 代码 */
+.code-block-wrapper {
+  margin: 8px 0;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.code-block-wrapper .code-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 12px;
+  background: var(--bg-tertiary, var(--bg-secondary));
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+}
+.code-block-wrapper .code-block-lang {
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+.code-copy-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 2px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.code-copy-btn:hover {
+  background: var(--accent-bg);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.code-copy-btn.copied {
+  background: var(--accent);
+  color: var(--text-inverse);
+  border-color: var(--accent);
+}
+.code-block-wrapper pre {
+  margin: 0;
+  border-radius: 0;
+}
+
 /* 代码语法高亮 */
 .hl-keyword { color: #c792ea; font-weight: 600; }
 .hl-string { color: #c3e88d; }

@@ -33,7 +33,13 @@ def _context_window(model: str) -> int:
 _SYSTEM_PROMPT = (
     "You are a helpful AI assistant. "
     "Use the available tools to complete the user's goal. "
-    "When the goal is fully achieved, respond with a final answer and do not call any more tools."
+    "When the goal is fully achieved, respond with a final answer and do not call any more tools.\n\n"
+    "RESPONSE FORMAT RULES:\n"
+    "- Always output COMPLETE code blocks using triple backticks (```language ... ```).\n"
+    "- NEVER use placeholders like CODEBLOCK0, CODE_BLOCK_0, [code], <previous_code>, "
+    "or any shorthand that refers to previously shown code.\n"
+    "- If referencing code you wrote earlier in this conversation, RE-OUTPUT the full code block verbatim.\n"
+    "- Code blocks must contain the actual source code, not a reference or summary."
 )
 
 

@@ -25,6 +25,25 @@ export class Chat {
     this.currentAssistantTextEl = null;
     this._receivedAnyToken = false;
     this._hasPendingInput = false;
+
+    // 事件委托：处理代码块复制按钮点击
+    this.messagesEl.addEventListener("click", (e) => {
+      const btn = e.target.closest(".code-copy-btn");
+      if (!btn) return;
+      const encoded = btn.getAttribute("data-code") || "";
+      const code = decodeURIComponent(encoded);
+      navigator.clipboard.writeText(code).then(() => {
+        btn.textContent = "✓ 已复制";
+        btn.classList.add("copied");
+        setTimeout(() => {
+          btn.textContent = "复制";
+          btn.classList.remove("copied");
+        }, 1500);
+      }).catch(() => {
+        btn.textContent = "✗ 失败";
+        setTimeout(() => { btn.textContent = "复制"; }, 1500);
+      });
+    });
   }
 
   // ---- 用户操作 ----
