@@ -8,6 +8,8 @@ import { Chat } from "./chat.js";
 import { Permission } from "./permission.js";
 import { SkillCompleter } from "./skill.js";
 import { TracePanel } from "./trace.js";
+import { FileTree } from "./filetree.js";
+import { highlightCode } from "./highlight.js";
 
 const rpc = new RepoRpc();
 const theme = new Theme();
@@ -15,6 +17,9 @@ const chat = new Chat(rpc, null);   // 先给 null，session 构造完后再注�
 const session = new Session(rpc, chat);
 const permission = new Permission(rpc);
 const tracePanel = new TracePanel(rpc);
+const fileTree = new FileTree(rpc, document.getElementById("filetree-body"), async (path) => {
+  await openFileModal(path);
+});
 chat.session = session;
 
 theme.init();
@@ -99,6 +104,53 @@ document.getElementById("trace-toggle").onclick = () => tracePanel.toggle();
 document.getElementById("new-session-top").onclick = () => session.create();
 document.getElementById("new-session-btn").onclick = () => session.create();
 
+// 文件树面板
+const filetreePanel = document.getElementById("filetree-panel");
+document.getElementById("filetree-toggle").onclick = async () => {
+  const isOpen = filetreePanel.classList.toggle("open");
+  if (isOpen && fileTree.rootEl.children.length === 0) {
+    await fileTree.init();
+  }
+};
+document.getElementById("filetree-close").onclick = () => filetreePanel.classList.remove("open");
+document.getElementById("filetree-refresh").onclick = async () => {
+  await fileTree.refresh();
+};
+
+// 文件预览 Modal
+const fileModal = document.getElementById("file-modal");
+const fileModalTitle = document.getElementById("file-modal-title");
+const fileModalCode = document.getElementById("file-modal-code");
+document.getElementById("file-modal-close").onclick = () => fileModal.setAttribute("hidden", "");
+fileModal.addEventListener("click", (e) => {
+  if (e.target === fileModal) fileModal.setAttribute("hidden", "");
+});
+document.getElementById("file-modal-copy").onclick = () => {
+  const text = fileModalCode.textContent || "";
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById("file-modal-copy");
+    btn.textContent = "✓";
+    setTimeout(() => { btn.textContent = "复制"; }, 1200);
+  });
+};
+
+async function openFileModal(path) {
+  fileModalTitle.textContent = path;
+  fileModalCode.textContent = "加载中...";
+  fileModal.removeAttribute("hidden");
+  try {
+    const result = await rpc.call("fs.read_file", { path });
+    const ext = path.split(".").pop()?.toLowerCase() || "";
+    fileModalCode.innerHTML = highlightCode(result.content, ext);
+    const sizeKB = (result.size / 1024).toFixed(1);
+    const truncMark = result.truncated ? " · 已截断" : "";
+    fileModalTitle.textContent = `${path}  ·  ${sizeKB} KB${truncMark}`;
+  } catch (e) {
+    fileModalCode.textContent = `❌ ${e.message}`;
+  }
+}
+window.openFileModal = openFileModal;
+
 // 侧栏（窄屏）
 const sidebar = document.getElementById("sidebar");
 const sidebarToggle = document.getElementById("sidebar-toggle");
@@ -181,4 +233,4 @@ async function bootstrap() {
 bootstrap();
 
 // 暴露给 console 方便调试
-window.repo = { rpc, session, chat, permission, theme, toast, skillCompleter, tracePanel };
+window.repo = { rpc, session, chat, permission, theme, toast, skillCompleter, tracePanel, fileTree, openFileModal };

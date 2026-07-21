@@ -149,6 +149,35 @@ class RunCancelResult(BaseModel):
     run_id: str | None = None
 
 
+class FsListDirCommand(BaseModel):
+    type: Literal["fs.list_dir"] = "fs.list_dir"
+    path: str = "."
+
+
+class FsEntry(BaseModel):
+    name: str
+    path: str
+    is_dir: bool
+    size: int = 0
+
+
+class FsListDirResult(BaseModel):
+    path: str
+    entries: list[FsEntry]
+
+
+class FsReadFileCommand(BaseModel):
+    type: Literal["fs.read_file"] = "fs.read_file"
+    path: str
+
+
+class FsReadFileResult(BaseModel):
+    path: str
+    content: str
+    size: int
+    truncated: bool = False
+
+
 # 根据 type 字段决定命令类型的判别联合
 Command = Annotated[
     PingCommand
@@ -164,6 +193,8 @@ Command = Annotated[
     | SkillListCommand
     | TraceReadCommand
     | RunCancelCommand
-    | SessionTruncateCommand,
+    | SessionTruncateCommand
+    | FsListDirCommand
+    | FsReadFileCommand,
     Discriminator("type"),
 ]

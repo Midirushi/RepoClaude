@@ -20,6 +20,11 @@ from repo_claude.core.bus.commands import (
     AgentRunResult,
     EventSubscribeCommand,
     EventSubscribeResult,
+    FsEntry,
+    FsListDirCommand,
+    FsListDirResult,
+    FsReadFileCommand,
+    FsReadFileResult,
     PermissionRespondCommand,
     PermissionRespondResult,
     PongResult,
@@ -187,6 +192,63 @@ class CoreApp:
         except (asyncio.CancelledError, Exception):
             pass
         return RunCancelResult(cancelled=True, run_id=run_id)
+
+    # 安全解析相对路径：禁止 .. 越界，必须落在 cwd 内
+    def _safe_resolve(self, rel_path: str) -> Path:
+        cwd = Path.cwd()
+        # 禁止绝对路径或包含 ..
+        if rel_path.startswith("/") or ".." in Path(rel_path).parts:
+            raise PermissionError(f"path traversal not allowed: {rel_path}")
+        target = (cwd / rel_path).resolve()
+        try:
+            target.relative_to(cwd.resolve())
+        except ValueError as exc:
+            raise PermissionError(f"path outside cwd not allowed: {rel_path}") from exc
+        return target
+
+    # 列出指定目录下的条目（仅一层，按目录优先排序）
+    async def _fs_list_dir_handler(self, params: dict[str, Any]) -> FsListDirResult:
+        cmd = FsListDirCommand.model_validate(params)
+        target = self._safe_resolve(cmd.path)
+        if not target.exists():
+            raise FileNotFoundError(f"no such directory: {cmd.path}")
+        if not target.is_dir():
+            raise NotADirectoryError(f"not a directory: {cmd.path}")
+        cwd = Path.cwd()
+        entries: list[FsEntry] = []
+        for item in sorted(target.iterdir(), key=lambda e: (not e.is_dir(), e.name.lower())):
+            try:
+                rel = item.relative_to(cwd)
+                rel_str = str(rel)
+            except ValueError:
+                continue
+            try:
+                size = item.stat().st_size if item.is_file() else 0
+            except OSError:
+                size = 0
+            entries.append(FsEntry(
+                name=item.name,
+                path=rel_str,
+                is_dir=item.is_dir(),
+                size=size,
+            ))
+        return FsListDirResult(path=cmd.path, entries=entries)
+
+    # 读取文本文件内容（限制 1MB）
+    async def _fs_read_file_handler(self, params: dict[str, Any]) -> FsReadFileResult:
+        cmd = FsReadFileCommand.model_validate(params)
+        target = self._safe_resolve(cmd.path)
+        if not target.exists():
+            raise FileNotFoundError(f"no such file: {cmd.path}")
+        if not target.is_file():
+            raise IsADirectoryError(f"not a file: {cmd.path}")
+        max_size = 1_048_576  # 1 MB
+        size = target.stat().st_size
+        truncated = size > max_size
+        content = target.read_text(encoding="utf-8", errors="replace")
+        if truncated:
+            content = content[:max_size] + "\n\n... (truncated)"
+        return FsReadFileResult(path=cmd.path, content=content, size=size, truncated=truncated)
 
     # 返回 session 的完整 Anthropic messages 历史
     async def _session_history_handler(self, params: dict[str, Any]) -> SessionGetHistoryResult:
@@ -397,6 +459,8 @@ class CoreApp:
         server.register("skill.list", self._skill_list_handler)
         server.register("trace.read", self._trace_read_handler)
         server.register("run.cancel", self._run_cancel_handler)
+        server.register("fs.list_dir", self._fs_list_dir_handler)
+        server.register("fs.read_file", self._fs_read_file_handler)
 
         addr = await server.start()
         logger.info("repo-core %s listening addr=%s", repo_claude.__version__, addr)

@@ -20,6 +20,7 @@
         <span class="version" id="status-version"></span>
       </div>
       <div class="actions">
+        <button id="filetree-toggle" class="icon-btn" title="文件浏览" aria-label="文件浏览">📁</button>
         <button id="trace-toggle" class="icon-btn" title="Trace 面板" aria-label="Trace 面板">📡</button>
         <button id="theme-toggle" class="icon-btn" title="切换主题" aria-label="切换主题">☀</button>
         <button id="new-session-top" class="primary-btn" title="新建会话" aria-label="新建会话">⏻ 新会话</button>
@@ -102,6 +103,32 @@
         <button id="trace-close" class="trace-btn">✕</button>
       </div>
       <div class="trace-list" id="trace-list"></div>
+    </div>
+
+    <!-- 文件浏览面板 -->
+    <div class="filetree-panel" id="filetree-panel">
+      <div class="filetree-header">
+        <span class="filetree-title">📁 文件浏览</span>
+        <button id="filetree-refresh" class="trace-btn" title="刷新">⟳</button>
+        <button id="filetree-close" class="trace-btn" title="关闭">✕</button>
+      </div>
+      <div class="filetree-body" id="filetree-body"></div>
+    </div>
+
+    <!-- 文件预览 Modal -->
+    <div class="modal-overlay" id="file-modal" hidden>
+      <div class="modal file-modal">
+        <div class="modal-header">
+          <span class="modal-title" id="file-modal-title">—</span>
+          <div class="modal-actions">
+            <button class="trace-btn" id="file-modal-copy">复制</button>
+            <button class="trace-btn" id="file-modal-close">✕</button>
+          </div>
+        </div>
+        <div class="modal-body">
+          <pre class="code-block"><code id="file-modal-code"></code></pre>
+        </div>
+      </div>
     </div>
   </div>
 
